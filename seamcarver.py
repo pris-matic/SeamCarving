@@ -30,14 +30,14 @@ class SeamCarver(Picture):
         else:
             topVal = self[i,j-1]
         
-        if (i+1 == self.height()):
+        if (j+1 == self.height()):
             bottomVal = self[0,j]
         else:
             bottomVal = self[i,j+1]
         
         top_r,top_g,top_b = topVal
         bottom_r,bottom_g,bottom_b = bottomVal
-        yEnergy = pow(abs(top_r-bottom_r),2) + pow(abs(top_g-bottom_g),2) + pow(abs(top_b-bottom_b),2)
+        yEnergy = pow(abs(bottom_r-top_r),2) + pow(abs(bottom_g-top_g),2) + pow(abs(bottom_b-top_b),2)
 
         return sqrt(xEnergy+yEnergy)
 
