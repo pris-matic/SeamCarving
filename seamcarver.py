@@ -51,71 +51,53 @@ class SeamCarver(Picture):
         Return a sequence of indices representing the lowest-energy
         vertical seam
         '''
-        # stores the indices corresponding to the minimum energy
-        vertical_seam = []
-        min_path = {}
+        
+        min_energy = {} # stores the minimum cumulative energy
+        min_path = {} # stores the path leading to the minimum cumulative energy
 
         for j in range (self.height()):
             for i in range(self.width()):
                 if j == 0:
-                    min_path[i,j] = self.energy(i,j)
+                    min_energy[i,j] = self.energy(i,j)
+                    min_path[i,j] = 0
                 else:
                     # get energy of: top-left, directly above, and top-right values, provided they are within range
                     if i > 0:
-                        top_left = min_path[i-1,j-1]
+                        top_left = min_energy[i-1,j-1]
                     else:
                         top_left = 1e20
                     
-                    directly_above = min_path[i,j-1]
+                    directly_above = min_energy[i,j-1]
 
                     if i < self.width() - 1:
-                        top_right = min_path[i+1,j-1]
+                        top_right = min_energy[i+1,j-1]
                     else:
                         top_right = 1e20
                     
-                    min_val = min(top_left,directly_above,top_right)
-                    min_path[i,j] = min_val + self.energy(i,j)
+                    movement = [top_left,directly_above,top_right]
+                    min_val = min(movement)
+                    min_energy[i,j] = min_val + self.energy(i,j)
+                    min_path[i,j] = movement.index(min_val) - 1
             
         # get minimum energy at height - 1
-        min_energy_at_bottom = []
+        min_val = 1e20
+        x_pos = 0
         for i in range(self.width()):
-            min_energy_at_bottom.append(min_path[i,self.height() - 1])
-        vertical_seam.append(min_energy_at_bottom.index(min(min_energy_at_bottom)))
+            if min_energy[i, self.height()-1] < min_val:
+                min_val = min_energy[i, self.height()-1]
+                x_pos = i
+
+        vertical_seam = [] # stores the indices corresponding to the minimum energy
 
         # backtrack to get the indexes
-        for i in range(2,self.height()+1,1):
-            x = vertical_seam[len(vertical_seam)-1] ## get the x-index of the last value
 
-            if x > 0:
-                top_left = min_path[x-1,(self.height()-i)]
-            else:
-                top_left = 1e20
-                    
-            directly_above = min_path[x,(self.height()-i)]
-
-            if x < self.width() - 1:
-                top_right = min_path[x+1,(self.height()-i)]
-            else:
-                top_right = 1e20
-
-            temp_arr = [top_left,directly_above,top_right]
-
-            temp_val = 0
-            for j in range(len(temp_arr)):
-                if j == 0:
-                    temp_val = temp_arr[j]
-                else:
-                    if temp_arr[j] < temp_val:
-                        temp_val = temp_arr[j]
-            
-            if temp_val == top_left:
-                vertical_seam.append(x-1)
-            elif temp_val == directly_above:
-                vertical_seam.append(x)
-            else: # equal to top_right
-                vertical_seam.append(x+1)
+        for j in range (self.height()-1,-1,-1):
+            vertical_seam.append(x_pos)
+            if j > 0:
+                x_pos += min_path[x_pos,j]
 
         vertical_seam.reverse()
+        print(len(vertical_seam))
         return vertical_seam
 
     def find_horizontal_seam(self) -> list[int]:
@@ -123,22 +105,51 @@ class SeamCarver(Picture):
         Return a sequence of indices representing the lowest-energy
         horizontal seam
         '''
-
+        img = SeamCarver(self.picture().transpose(Image.Transpose.ROTATE_90))
+        horizontal_seam = img.find_vertical_seam()
         
-
+        return horizontal_seam
+    
     def remove_vertical_seam(self, seam: list[int]):
         '''
         Remove a vertical seam from the picture
         '''
+        for i in range(len(seam)-1):
+            if abs(seam[i]-seam[i+1])>1:
+                raise SeamError("SeamError: Invalid seam.")
+        if (len(seam) != self.height()):
+            raise SeamError("SeamError: Seam is not equal to the height.")
         if self.width() == 1:
             raise SeamError("SeamError: Width is equal to 1.")
+        
+        for j in range(self.height()): 
+            to_remove = seam[j] 
+            
+            for i in range(to_remove, self.width() - 1):
+                self[i, j] = self[i + 1, j]
+            
+            del self[self.width() - 1, j]
+
+        self._width -= 1
 
     def remove_horizontal_seam(self, seam: list[int]):
         '''
         Remove a horizontal seam from the picture
         '''
+        for i in range(len(seam)-1):
+            if abs(seam[i]-seam[i+1])>1:
+                raise SeamError("SeamError: Invalid seam.")
+        if (len(seam) != self.width()):
+            raise SeamError("SeamError: Seam is not equal to the width.")
         if self.height() == 1:
             raise SeamError("SeamError: Height is equal to 1.")
+
+        img = SeamCarver(self.picture().transpose(Image.Transpose.ROTATE_90))
+        seam.reverse()
+        img.remove_vertical_seam(seam)
+            
+        new_img = img.picture().transpose(Image.Transpose.ROTATE_270)
+        self.__init__(new_img)
 
 class SeamError(Exception):
     pass
