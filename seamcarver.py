@@ -97,7 +97,6 @@ class SeamCarver(Picture):
                 x_pos += min_path[x_pos,j]
 
         vertical_seam.reverse()
-        print(len(vertical_seam))
         return vertical_seam
 
     def find_horizontal_seam(self) -> list[int]:
@@ -107,8 +106,9 @@ class SeamCarver(Picture):
         '''
         img = SeamCarver(self.picture().transpose(Image.Transpose.ROTATE_90))
         horizontal_seam = img.find_vertical_seam()
-        
-        return horizontal_seam
+        horizontal_seam.reverse()
+
+        return horizontal_seam  
     
     def remove_vertical_seam(self, seam: list[int]):
         '''
@@ -145,10 +145,13 @@ class SeamCarver(Picture):
             raise SeamError("SeamError: Height is equal to 1.")
 
         img = SeamCarver(self.picture().transpose(Image.Transpose.ROTATE_90))
-        seam.reverse()
+        # since ROTATE_90 rotates the image counter-clockwise, thus making the indexes the opposite way
+        # i.e. index 0 is now at the bottom, and the one at the bottom is at index 0
+        seam.reverse() 
         img.remove_vertical_seam(seam)
             
         new_img = img.picture().transpose(Image.Transpose.ROTATE_270)
+        self.clear() # to clear previous dictionary values
         self.__init__(new_img)
 
 class SeamError(Exception):
