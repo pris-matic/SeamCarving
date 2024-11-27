@@ -108,7 +108,7 @@ class SeamCarver(Picture):
         horizontal_seam = img.find_vertical_seam()
         horizontal_seam.reverse()
 
-        return horizontal_seam  
+        return horizontal_seam
     
     def remove_vertical_seam(self, seam: list[int]):
         '''
